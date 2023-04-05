@@ -45,3 +45,4 @@ def eplies(message):
 
 def main():
     db_session.global_init("db/physics.db")
+    bot.infinity_polling()
