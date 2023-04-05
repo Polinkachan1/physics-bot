@@ -3,7 +3,6 @@ from bot_token import BOT_TOKEN
 import telebot
 from telebot import types
 
-
 bot = telebot.TeleBot(BOT_TOKEN)
 
 
@@ -31,6 +30,6 @@ def replies(message):
         bot.send_message(message.chat.id, "Чтобы найти формулу ....")
 
 
-
 def main():
     db_session.global_init("db/physics.db")
+    bot.infinity_polling()
