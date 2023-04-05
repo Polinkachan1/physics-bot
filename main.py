@@ -20,7 +20,7 @@ def start_message(message):
 
 
 @bot.message_handler(content_types=['text'])
-def replies(message):
+def eplies(message):
     if message.text == "Выбор класса":
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         grade_9 = types.KeyboardButton("9-й класс")
