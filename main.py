@@ -3,25 +3,41 @@ from sqlalchemy import update
 from data import db_session
 from bot_token import BOT_TOKEN
 import telebot
+from sqlalchemy import update
+
+from data import db_session
+from bot_token import BOT_TOKEN
+import telebot
 from telebot import types
 from data.db_session import create_session
 from data.formula import Formula
-from prettytable import PrettyTable
+from data.user import User
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
 
+def main():
+    db_session.global_init("db/formulas.sqlite")
+    db_session.global_init("db/users.sqlite")
+    bot.infinity_polling()
+
+
 @bot.message_handler(commands=['start'])
 def start_message(message):
+    session = create_session()
+    user = User(
+        user_id=message.chat.id,
+    )
+    session.add(user)
+    session.commit()
+
     # start menu
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    img = open('data/smile.png', 'rb')
+    bot.send_photo(message.chat.id, img)
+    markup_1 = types.ReplyKeyboardMarkup(resize_keyboard=True)
     grade = types.KeyboardButton("Выбор класса")
-    search_formula = types.KeyboardButton("Найти формулу")
-    search_information = types.KeyboardButton("Найти тему")
-    get_all = types.KeyboardButton("Все формулы")
-    add_form = types.KeyboardButton("Добавить формулу")
-    markup.add(grade, search_formula, search_information, get_all, add_form)
-    bot.send_message(message.chat.id, "Привет. Выбери, что хочешь делать?", reply_markup=markup)
+    markup_1.add(grade)
+    bot.send_message(message.chat.id, "Привет. Выбери класс.", reply_markup=markup_1)
 
 
 @bot.message_handler(content_types=['text'])
@@ -53,9 +69,8 @@ def replies(message):
 
     # 9 grade(working)
     elif message.text == '9-й класс' or message.text == '9':
-        global needen_grade
         needen_grade = 9
-        print(needen_grade)
+        add_grade(message.chat.id, needen_grade)
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         search_formula = types.KeyboardButton("Найти формулу")
         search_information = types.KeyboardButton("Найти тему")
@@ -69,7 +84,7 @@ def replies(message):
     # 10 grade(working)
     elif message.text == '10-й класс' or message.text == '10':
         needen_grade = 10
-        print(needen_grade)
+        add_grade(message.chat.id, needen_grade)
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         markup.add(
             types.KeyboardButton("Найти формулу"),
@@ -84,7 +99,7 @@ def replies(message):
     # 11 grade(working)
     elif message.text == '11-й класс' or message.text == '11':
         needen_grade = 11
-        print(needen_grade)
+        add_grade(message.chat.id, needen_grade)
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         search_formula = types.KeyboardButton("Найти формулу")
         search_information = types.KeyboardButton("Найти тему")
@@ -97,17 +112,14 @@ def replies(message):
 
     # search by name of formula
     elif message.text[:13].lower().startswith('найди формулу'):
-        global what_to_find
         what_to_find = message.text[14:]
         bot.send_message(message.chat.id, 'Ищу формулу по вашему запросу....Пожалуйста ожидайте.')
-        bot.send_message(message.chat.id, get_needen_formula(what_to_find))
+        bot.send_message(message.chat.id, get_needen_formula(message.chat.id, what_to_find))
 
     # search by topic
     elif message.text[:10].lower().startswith('найди тему: '):
-        global topic_to_find
         topic_to_find = message.text[11:]
-        print(topic_to_find)
-        bot.send_message(message.chat.id, get_needen_topic(topic_to_find))
+        bot.send_message(message.chat.id, get_needen_topic(message.chat.id, topic_to_find))
         bot.send_message(message.chat.id, 'Ищу формулы по выбранной теме....Пожалуйста ожидайте.')
 
     # adding new formula with needen params
@@ -123,8 +135,8 @@ def replies(message):
         session = create_session()
         session.execute(
             update(Formula)
-            .where(Formula.is_finished == False)
-            .set(topic=new_topic)
+                .where(Formula.is_finished == False)
+                .set(topic=new_topic)
         )
         bot.send_message(message.chat.id, 'С темой определились. Введите название формулы: .....')
         # bot.send_message(message.chat.id, 'Введите пояснения к формуле - пояснения: .....')
@@ -135,8 +147,8 @@ def replies(message):
         session = create_session()
         session.execute(
             update(Formula)
-            .where(Formula.is_finished == False)
-            .values(formula_name=new_formula_name)
+                .where(Formula.is_finished == False)
+                .values(formula_name=new_formula_name)
         )
         bot.send_message(message.chat.id,
                          'Так с названием разобрались, продолжим. Введите формулу в формате - формула: .....')
@@ -147,10 +159,10 @@ def replies(message):
         session = create_session()
         session.execute(
             update(Formula)
-            .where(Formula.is_finished == False)
-            .values(formula=new_formula)
+                .where(Formula.is_finished == False)
+                .values(formula=new_formula)
         )
-        bot.send_message(message.chat.id, 'Так формула есть, продолжим. FFFFFFFFFFFFFF: .....')
+        bot.send_message(message.chat.id, 'Так формула есть, продолжим. Введите пояснения в формате - пояснения: .....')
 
     # get explanation
     elif message.text.lower().startswith('пояснения:'):
@@ -158,30 +170,53 @@ def replies(message):
         session = create_session()
         session.execute(
             update(Formula)
-            .where(Formula.is_finished == False)
-            .values(explanation=new_explanation)
+                .where(Formula.is_finished == False)
+                .values(explanation=new_explanation)
         )
-        bot.send_message(message.chat.id, 'Пояснение принято. AAAAAAAAAAAAAAAAAAAAAAAAAAA')
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        i_dont_understand = types.KeyboardButton("Обьяснение")
+        markup.add(i_dont_understand)
+        bot.send_message(message.chat.id, 'Пояснение принято. Теперь напишите детали - детали:....'
+                                          'Если не знаете что такое детали, нажмите на кнопку обьяснение. ',
+                         reply_markup=markup)
 
     # get details
-    elif message.text.lower().startswith('AAAAAAAAAAAAAAAAAAAAAAAAAAA:'):
-        new_details = message.text[len('AAAAAAAAAAAAAAAAAAAAAAAAAAA детали по-русски:') + 1:]
+    elif message.text.lower().startswith('детали:'):
+        new_details = message.text[len('детали:') + 1:]
         session = create_session()
         session.execute(
             update(Formula)
-            .where(Formula.is_finished == False)
-            .values(details=new_details)
+                .where(Formula.is_finished == False)
+                .values(details=new_details)
         )
-        bot.send_message(message.chat.id, 'AAAAAAAAAAAAAAAAAAAAAAAAAAA')
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        all_done = types.KeyboardButton("формула готова")
+        markup.add(all_done)
+        bot.send_message(message.chat.id,
+                         'Детали успешно добавлены. Чтобы завершить нажмите на кнопку или напишите формула готова.',
+                         reply_markup=markup)
 
     elif message.text.lower() == 'формула готова':
         session = create_session()
         session.execute(
             update(Formula)
-            .where(Formula.is_finished == False)
-            .values(is_finished=True)
+                .where(Formula.is_finished == False)
+                .values(is_finished=True)
         )
         bot.send_message(message.chat.id, 'Формула добавлена в каталог.')
+
+    elif message.text.lower() == 'обьяснение':
+        bot.send_message(message.chat.id, 'what_to_do.txt')
+
+
+def add_grade(chat_id, grade):
+    session = create_session()
+    session.execute(
+        update(User)
+            .where(User.user_id == chat_id)
+            .values(grade=grade)
+    )
+    session.commit()
 
 
 def get_all_formulas():  # получение всех формул за все классы(работает)
@@ -193,40 +228,28 @@ def get_all_formulas():  # получение всех формул за все 
         f'{note.topic}, {note.formula_name}, {note.formula}, {note.explanation}, {note.details}' for note in notes)
 
 
-# message all formulas
-# def print_all_formulas_to_table():
-# table = PrettyTable()
-# table.field_names = ['Тема', 'Название формулы', 'Формула', 'Обьяснение', 'Детали']
-# all_formulas = get_all_formulas()
-# for note in enumerate(all_formulas):
-# table.add_row(note)
-# bot.send_message(all_formulas)
-
-
 # get one formula(работает)
-def get_needen_formula(what_to_find):
+def get_needen_formula(chat_id, what_to_find):
     session = create_session()
-    if needen_grade:
-        for formula in session.query(Formula).filter(Formula.grade == needen_grade,
-                                                     Formula.formula_name == what_to_find):
-            return (f' {formula.formula_name}, {formula.formula}, {formula.explanation}')
-    else:
-        for formula in session.query(Formula).filter(Formula.formula_name == what_to_find):
-            return (f' {formula.formula_name}, {formula.formula}, {formula.explanation}')
+    user = session.query(User).filter(User.user_id == chat_id).one()
+    if user.grade is None:
+        formula_without_grade = session.query(Formula).filter(Formula.formula_name == what_to_find).scalar()
+        return f'{formula_without_grade.formula_name}, {formula_without_grade.formula}, {formula_without_grade.explanation}'
+    formula_if_grade = session.query(Formula).filter(Formula.formula_name == what_to_find, Formula.year == user.grade)
+    return f'{formula_if_grade.formula_name}, {formula_if_grade.formula}, {formula_if_grade.explanation}'
 
 
 # find topic
-def get_needen_topic(topic_to_find):
+def get_needen_topic(chat_id, topic_to_find):
     session = create_session()
-    needen_grade = 9
-    if needen_grade:
-        notes = session.query(Formula).filter(Formula.grade == needen_grade, Formula.formula_name == topic_to_find)
-        return '\n'.join(
-            f'{note.topic}, {note.formula_name}, {note.formula}, {note.explanation}, {note.details}' for note in notes)
-    else:
-        notes = session.query(Formula).filter(Formula.formula_name == topic_to_find)
-        return '\n'.join(
-            f'{note.topic}, {note.formula_name}, {note.formula}, {note.explanation}, {note.details}' for note in notes)
+    user = session.query(User).filter(User.user_id == chat_id).one()
+    notes_if_grade = session.query(Formula).filter(Formula.formula_name == topic_to_find, Formula.year == user.grade)
+    notes_without_grade = session.query(Formula).filter(Formula.formula_name == topic_to_find)
+    if user.grade is not None:
+        return '\n'.join(f'{note.topic}, {note.formula_name}, {note.formula}, {note.explanation}, {note.details}'
+                         for note in notes_if_grade)
+    return '\n'.join(f'{note.topic}, {note.formula_name}, {note.formula}, {note.explanation}, {note.details}'
+                     for note in notes_without_grade)
 
 
 def add_formula(year):
@@ -236,11 +259,6 @@ def add_formula(year):
     )
     session.add(formula)
     session.commit()
-
-
-def main():
-    db_session.global_init("db/formulas.sqlite")
-    bot.infinity_polling()
 
 
 main()
