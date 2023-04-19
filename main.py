@@ -1,9 +1,5 @@
 from sqlalchemy import update
-
-from data import db_session
-from bot_token import BOT_TOKEN
-import telebot
-from sqlalchemy import update
+from sqlalchemy.exc import IntegrityError
 
 from data import db_session
 from bot_token import BOT_TOKEN
@@ -12,7 +8,7 @@ from telebot import types
 from data.db_session import create_session
 from data.formula import Formula
 from data.user import User
-
+from prettytable import PrettyTable
 bot = telebot.TeleBot(BOT_TOKEN)
 
 
@@ -29,11 +25,14 @@ def start_message(message):
         user_id=message.chat.id,
     )
     session.add(user)
-    session.commit()
+    try:
+        session.commit()
+    except IntegrityError:
+        pass
 
     # start menu
-    img = open('data/smile.png', 'rb')
-    bot.send_photo(message.chat.id, img)
+    with open('assets/smile.png', 'rb') as img:
+        bot.send_photo(message.chat.id, img)
     markup_1 = types.ReplyKeyboardMarkup(resize_keyboard=True)
     grade = types.KeyboardButton("Выбор класса")
     markup_1.add(grade)
@@ -52,12 +51,12 @@ def replies(message):
         bot.send_message(message.chat.id, 'В каком вы классе?', reply_markup=markup)
     # find formula
     elif message.text == 'Найти формулу':
-        bot.send_message(message.chat.id, "Чтобы найти формулу, напишите найди формулу Название формулы")
+        bot.send_message(message.chat.id, "Чтобы найти формулу, напишите: найди формулу: 'Название формулы' ")
 
     # find topic
     elif message.text == 'Найти тему':
-        bot.send_message(message.chat.id, "Чтобы найти тему, напишите - найди тему Название тему ")
-        # сделано(вроде)
+        bot.send_message(message.chat.id, "Чтобы найти тему, напишите: найди тему: 'Название темы' ")
+
     # add new formula to db
     elif message.text == "Добавить формулу":
         bot.send_message(message.chat.id, "Чтобы добавить новую формулу ответьте на несколько вопросов.")
@@ -70,6 +69,7 @@ def replies(message):
     # 9 grade(working)
     elif message.text == '9-й класс' or message.text == '9':
         needen_grade = 9
+        print(needen_grade)
         add_grade(message.chat.id, needen_grade)
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         search_formula = types.KeyboardButton("Найти формулу")
@@ -111,16 +111,18 @@ def replies(message):
                          reply_markup=markup)
 
     # search by name of formula
-    elif message.text[:13].lower().startswith('найди формулу'):
-        what_to_find = message.text[14:]
+    elif message.text.lower().startswith('найди формулу: '):
+        what_to_find = message.text[15:]
         bot.send_message(message.chat.id, 'Ищу формулу по вашему запросу....Пожалуйста ожидайте.')
         bot.send_message(message.chat.id, get_needen_formula(message.chat.id, what_to_find))
 
     # search by topic
-    elif message.text[:10].lower().startswith('найди тему: '):
-        topic_to_find = message.text[11:]
-        bot.send_message(message.chat.id, get_needen_topic(message.chat.id, topic_to_find))
+    elif message.text.lower().startswith('найди тему: '):
+        topic_to_find = message.text[12:]
         bot.send_message(message.chat.id, 'Ищу формулы по выбранной теме....Пожалуйста ожидайте.')
+        messages = get_needen_topic(message.chat.id, topic_to_find)
+        for message_text in messages:
+            bot.send_message(message.chat.id, message_text)
 
     # adding new formula with needen params
     # get year
@@ -154,8 +156,8 @@ def replies(message):
                          'Так с названием разобрались, продолжим. Введите формулу в формате - формула: .....')
 
     # get formula
-    elif message.text.lower().startswith('формула:'):
-        new_formula = message.text[len('формула:') + 1:]
+    elif message.text.lower().startswith('формула: '):
+        new_formula = message.text[len('формула: ') + 1:]
         session = create_session()
         session.execute(
             update(Formula)
@@ -232,24 +234,26 @@ def get_all_formulas():  # получение всех формул за все 
 def get_needen_formula(chat_id, what_to_find):
     session = create_session()
     user = session.query(User).filter(User.user_id == chat_id).one()
-    if user.grade is None:
-        formula_without_grade = session.query(Formula).filter(Formula.formula_name == what_to_find).scalar()
-        return f'{formula_without_grade.formula_name}, {formula_without_grade.formula}, {formula_without_grade.explanation}'
-    formula_if_grade = session.query(Formula).filter(Formula.formula_name == what_to_find, Formula.year == user.grade)
-    return f'{formula_if_grade.formula_name}, {formula_if_grade.formula}, {formula_if_grade.explanation}'
+    print(what_to_find)
+    print(user.grade)
+    formula = session.query(Formula).filter(Formula.formula_name == what_to_find, Formula.year == user.grade).one()
+    if formula is None:
+        return 'Формула не найдена'
+    return f'{formula.formula_name}, {formula.formula}, {formula.explanation}'
 
 
 # find topic
 def get_needen_topic(chat_id, topic_to_find):
     session = create_session()
     user = session.query(User).filter(User.user_id == chat_id).one()
-    notes_if_grade = session.query(Formula).filter(Formula.formula_name == topic_to_find, Formula.year == user.grade)
-    notes_without_grade = session.query(Formula).filter(Formula.formula_name == topic_to_find)
-    if user.grade is not None:
-        return '\n'.join(f'{note.topic}, {note.formula_name}, {note.formula}, {note.explanation}, {note.details}'
-                         for note in notes_if_grade)
-    return '\n'.join(f'{note.topic}, {note.formula_name}, {note.formula}, {note.explanation}, {note.details}'
-                     for note in notes_without_grade)
+    print(topic_to_find)
+    print(user.grade)
+    print(session.query(Formula).filter(Formula.topic == topic_to_find, Formula.year == user.grade))
+    notes = session.query(Formula).filter(Formula.topic == topic_to_find, Formula.year == user.grade).all()
+    if len(notes) == 0:
+        return ['Формула не найдена']
+    return [f'{note.topic}, {note.formula_name}, {note.formula}, {note.explanation}, {note.details}'
+            for note in notes]
 
 
 def add_formula(year):
