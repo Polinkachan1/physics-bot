@@ -9,6 +9,7 @@ from data.db_session import create_session
 from data.formula import Formula
 from data.user import User
 from prettytable import PrettyTable
+
 bot = telebot.TeleBot(BOT_TOKEN)
 
 
@@ -64,7 +65,8 @@ def replies(message):
     # output - all formulas from db
     elif message.text == 'Все формулы':
         bot.send_message(message.chat.id, 'Готовлю для вас список всех формул....Пожалуйста ожидайте.')
-        bot.send_message(message.chat.id, get_all_formulas())
+        for text in get_all_formulas():
+            bot.send_message(message.chat.id, text)
 
     # 9 grade(working)
     elif message.text == '9-й класс' or message.text == '9':
@@ -204,7 +206,14 @@ def replies(message):
                 .where(Formula.is_finished == False)
                 .values(is_finished=True)
         )
-        bot.send_message(message.chat.id, 'Формула добавлена в каталог.')
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        search_formula = types.KeyboardButton('Найти формулу')
+        search_information = types.KeyboardButton('Найти тему')
+        get_all = types.KeyboardButton('Все формулы')
+        add_form = types.KeyboardButton('Добавить формулу')
+        change_class = types.KeyboardButton('Поменять класс')
+        markup.add(search_formula, search_information, get_all, add_form, change_class)
+        bot.send_message(message.chat.id, 'Формула добавлена в каталог.', reply_markup=markup)
 
     elif message.text.lower() == 'обьяснение':
         bot.send_message(message.chat.id, 'what_to_do.txt')
@@ -220,13 +229,11 @@ def add_grade(chat_id, grade):
     session.commit()
 
 
-def get_all_formulas():  # получение всех формул за все классы(работает)
+def get_all_formulas():
     session = create_session()
     notes = session.query(Formula).all()
-    if len(notes) == 0:
-        return 'Это были все формулы, которые у нас есть.'
-    return '\n'.join(
-        f'{note.topic}, {note.formula_name}, {note.formula}, {note.explanation}, {note.details}' for note in notes)
+    return [f'{note.topic}, {note.formula_name}, {note.formula}, {note.explanation}, {note.details}'
+            for note in notes]
 
 
 # get one formula(работает)
