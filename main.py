@@ -13,8 +13,8 @@ bot = telebot.TeleBot(BOT_TOKEN)
 
 
 def main():
-    db_session.global_init("db/formulas.sqlite")
-    db_session.global_init("db/users.sqlite")
+    db_session.global_init('db/formulas.sqlite')
+    db_session.global_init('db/users.sqlite')
     bot.infinity_polling()
 
 
@@ -31,52 +31,51 @@ def start_message(message):
         pass
 
     # start menu
-    with open('assets/smile.png', 'rb') as img:
+    with open('assets/start_photo.jpg', 'rb') as img:
         bot.send_photo(message.chat.id, img)
     markup_1 = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    grade = types.KeyboardButton("Выбор класса")
+    grade = types.KeyboardButton('Выбор класса')
     markup_1.add(grade)
-    bot.send_message(message.chat.id, "Привет. Выбери класс.", reply_markup=markup_1)
+    bot.send_message(message.chat.id, 'Привет. Выбери класс.', reply_markup=markup_1)
 
 
 @bot.message_handler(content_types=['text'])
 def replies(message):
     # choice of grade(работает)
-    if message.text == "Выбор класса" or message.text == "Поменять класс":
+    if message.text == 'Выбор класса' or message.text == 'Поменять класс':
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        grade_9 = types.KeyboardButton("9-й класс")
-        grade_10 = types.KeyboardButton("10-й класс")
-        grade_11 = types.KeyboardButton("11-й класс")
+        grade_9 = types.KeyboardButton('9-й класс')
+        grade_10 = types.KeyboardButton('10-й класс')
+        grade_11 = types.KeyboardButton('11-й класс')
         markup.add(grade_9, grade_10, grade_11)
         bot.send_message(message.chat.id, 'В каком вы классе?', reply_markup=markup)
     # find formula
     elif message.text == 'Найти формулу':
-        bot.send_message(message.chat.id, "Чтобы найти формулу, напишите: найди формулу: 'Название формулы' ")
+        bot.send_message(message.chat.id, 'Чтобы найти формулу, напишите: найди формулу: Название формулы')
 
     # find topic
     elif message.text == 'Найти тему':
-        bot.send_message(message.chat.id, "Чтобы найти тему, напишите: найди тему: 'Название темы' ")
+        bot.send_message(message.chat.id, 'Чтобы найти тему, напишите: найди тему: Название темы ')
 
     # add new formula to db
-    elif message.text == "Добавить формулу":
-        bot.send_message(message.chat.id, "Чтобы добавить новую формулу ответьте на несколько вопросов.")
-        bot.send_message(message.chat.id, "Введите название формулы в формате - новая формула: название формулы")
+    elif message.text == 'Добавить формулу':
+        bot.send_message(message.chat.id, 'Чтобы добавить новую формулу ответьте на несколько вопросов.')
+        bot.send_message(message.chat.id, 'Введите название формулы в формате - новая формула: название формулы')
     # output - all formulas from db
-    elif message.text == "Все формулы":
+    elif message.text == 'Все формулы':
         bot.send_message(message.chat.id, 'Готовлю для вас список всех формул....Пожалуйста ожидайте.')
         bot.send_message(message.chat.id, get_all_formulas())
 
     # 9 grade(working)
     elif message.text == '9-й класс' or message.text == '9':
         needen_grade = 9
-        print(needen_grade)
         add_grade(message.chat.id, needen_grade)
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        search_formula = types.KeyboardButton("Найти формулу")
-        search_information = types.KeyboardButton("Найти тему")
-        get_all = types.KeyboardButton("Все формулы")
-        add_form = types.KeyboardButton("Добавить формулу")
-        change_class = types.KeyboardButton("Поменять класс")
+        search_formula = types.KeyboardButton('Найти формулу')
+        search_information = types.KeyboardButton('Найти тему')
+        get_all = types.KeyboardButton('Все формулы')
+        add_form = types.KeyboardButton('Добавить формулу')
+        change_class = types.KeyboardButton('Поменять класс')
         markup.add(search_formula, search_information, get_all, add_form, change_class)
         bot.send_message(message.chat.id, 'Теперь вам доступна программа только 9-го класса. Что вы хотите сделать?',
                          reply_markup=markup)
@@ -87,11 +86,11 @@ def replies(message):
         add_grade(message.chat.id, needen_grade)
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         markup.add(
-            types.KeyboardButton("Найти формулу"),
-            types.KeyboardButton("Найти тему"),
-            types.KeyboardButton("Все формулы"),
-            types.KeyboardButton("Добавить формулу"),
-            types.KeyboardButton("Поменять класс"),
+            types.KeyboardButton('Найти формулу'),
+            types.KeyboardButton('Найти тему'),
+            types.KeyboardButton('Все формулы'),
+            types.KeyboardButton('Добавить формулу'),
+            types.KeyboardButton('Поменять класс'),
         )
         bot.send_message(message.chat.id, 'Теперь вам доступна программа только 10-го класса. Что вы хотите сделать?',
                          reply_markup=markup)
@@ -101,11 +100,11 @@ def replies(message):
         needen_grade = 11
         add_grade(message.chat.id, needen_grade)
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        search_formula = types.KeyboardButton("Найти формулу")
-        search_information = types.KeyboardButton("Найти тему")
-        get_all = types.KeyboardButton("Все формулы")
-        add_form = types.KeyboardButton("Добавить формулу")
-        change_class = types.KeyboardButton("Поменять класс")
+        search_formula = types.KeyboardButton('Найти формулу')
+        search_information = types.KeyboardButton('Найти тему')
+        get_all = types.KeyboardButton('Все формулы')
+        add_form = types.KeyboardButton('Добавить формулу')
+        change_class = types.KeyboardButton('Поменять класс')
         markup.add(search_formula, search_information, get_all, add_form, change_class)
         bot.send_message(message.chat.id, 'Теперь вам доступна программа только 11-го класса. Что вы хотите сделать?',
                          reply_markup=markup)
@@ -153,7 +152,7 @@ def replies(message):
                 .values(formula_name=new_formula_name)
         )
         bot.send_message(message.chat.id,
-                         'Так с названием разобрались, продолжим. Введите формулу в формате - формула: .....')
+                         'Так с названием разобрались, продолжим. Введите формулу в формате - формула: ')
 
     # get formula
     elif message.text.lower().startswith('формула: '):
@@ -164,11 +163,11 @@ def replies(message):
                 .where(Formula.is_finished == False)
                 .values(formula=new_formula)
         )
-        bot.send_message(message.chat.id, 'Так формула есть, продолжим. Введите пояснения в формате - пояснения: .....')
+        bot.send_message(message.chat.id, 'Так формула есть, продолжим. Введите пояснение в формате - пояснение: ')
 
     # get explanation
-    elif message.text.lower().startswith('пояснения:'):
-        new_explanation = message.text[len('пояснения:') + 1:]
+    elif message.text.lower().startswith('пояснение:'):
+        new_explanation = message.text[len('пояснение:') + 1:]
         session = create_session()
         session.execute(
             update(Formula)
@@ -176,9 +175,9 @@ def replies(message):
                 .values(explanation=new_explanation)
         )
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        i_dont_understand = types.KeyboardButton("Обьяснение")
+        i_dont_understand = types.KeyboardButton('Обьяснение')
         markup.add(i_dont_understand)
-        bot.send_message(message.chat.id, 'Пояснение принято. Теперь напишите детали - детали:....'
+        bot.send_message(message.chat.id, 'Пояснение принято. Теперь напишите детали - детали: '
                                           'Если не знаете что такое детали, нажмите на кнопку обьяснение. ',
                          reply_markup=markup)
 
@@ -192,7 +191,7 @@ def replies(message):
                 .values(details=new_details)
         )
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        all_done = types.KeyboardButton("формула готова")
+        all_done = types.KeyboardButton('формула готова')
         markup.add(all_done)
         bot.send_message(message.chat.id,
                          'Детали успешно добавлены. Чтобы завершить нажмите на кнопку или напишите формула готова.',
@@ -234,11 +233,9 @@ def get_all_formulas():  # получение всех формул за все 
 def get_needen_formula(chat_id, what_to_find):
     session = create_session()
     user = session.query(User).filter(User.user_id == chat_id).one()
-    print(what_to_find)
-    print(user.grade)
-    formula = session.query(Formula).filter(Formula.formula_name == what_to_find, Formula.year == user.grade).one()
+    formula = session.query(Formula).filter(Formula.formula_name == what_to_find, Formula.year == user.grade).scalar()
     if formula is None:
-        return 'Формула не найдена'
+        return 'Формула не найдена или вы неправильно ввели название'
     return f'{formula.formula_name}, {formula.formula}, {formula.explanation}'
 
 
@@ -246,9 +243,6 @@ def get_needen_formula(chat_id, what_to_find):
 def get_needen_topic(chat_id, topic_to_find):
     session = create_session()
     user = session.query(User).filter(User.user_id == chat_id).one()
-    print(topic_to_find)
-    print(user.grade)
-    print(session.query(Formula).filter(Formula.topic == topic_to_find, Formula.year == user.grade))
     notes = session.query(Formula).filter(Formula.topic == topic_to_find, Formula.year == user.grade).all()
     if len(notes) == 0:
         return ['Формула не найдена']
